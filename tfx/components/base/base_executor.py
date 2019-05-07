@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import abc
 import json
+import os
 from future.utils import with_metaclass
 import tensorflow as tf
 from typing import Any, Dict, List, Optional, Text
@@ -52,22 +53,36 @@ class BaseExecutor(with_metaclass(abc.ABCMeta, object)):
     """
     pass
 
-  def __init__(self, beam_pipeline_args = None):
+  def __init__(self, context):
     """Constructs a beam based executor.
 
     Args:
-      beam_pipeline_args: Beam pipeline args.
+      context : Base executor context
     """
-    self._beam_pipeline_args = beam_pipeline_args
-    if self._beam_pipeline_args:
-      self._beam_pipeline_args = deps_utils.make_beam_dependency_flags(
-          self._beam_pipeline_args)
+    self._context = context
+    self._tmp_path = os.path.join(self._context.tmp_dir,
+                                  self._context.unique_id, '')
+    if tf.gfile.Exists(self._tmp_path):
+      tf.logging.warn('Temporary directory %s already exists',
+                      self._tmp_path)
+    else:
+      tf.logging.info('Creating temp directory %s as directory',
+                      self._tmp_path)
+      tf.gfile.MakeDirs(self._tmp_path)
 
   # TODO(b/126182711): Look into how to support fusion of multiple executors
   # into same pipeline.
   def _get_beam_pipeline_args(self):
     """Get beam pipeline args."""
+    self._beam_pipeline_args = self._context.beam_pipeline_args
+    if self._beam_pipeline_args:
+      self._beam_pipeline_args = deps_utils.make_beam_dependency_flags(
+          self._beam_pipeline_args)
     return self._beam_pipeline_args
+
+  def _get_tmp_dir(self):
+    """Get the temporary directory path."""
+    return self._tmp_path
 
   def _log_startup(self, inputs,
                    outputs,

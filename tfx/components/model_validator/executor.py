@@ -133,8 +133,7 @@ class Executor(base_executor.BaseExecutor):
     self._log_startup(input_dict, output_dict, exec_properties)
 
     # TODO(b/125451545): Provide a safe temp path from base executor instead.
-    self._temp_path = os.path.join(
-        types.get_single_uri(output_dict['results']), '.temp')
+    self._temp_path = self._get_tmp_dir()
     tf.logging.info('Using temp path {} for tft.beam'.format(self._temp_path))
 
     eval_examples_uri = types.get_split_uri(input_dict['examples'], 'eval')
